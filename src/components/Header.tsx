@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useWorkoutStore, type SaveStatus } from '../store/workoutStore';
@@ -43,36 +44,45 @@ export default function Header({
 
         <div className="flex items-center gap-2.5">
           <div className="flex items-center gap-1.5 rounded-full border border-border bg-surface-2 px-2.5 py-1.5">
-            <span className={`inline-block h-[7px] w-[7px] rounded-full ${STATUS_COLOR[saveStatus]}`} />
+            <motion.span
+              key={saveStatus}
+              initial={{ scale: 0.5, opacity: 0.4 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.2 }}
+              className={`inline-block h-[7px] w-[7px] rounded-full ${STATUS_COLOR[saveStatus]}`}
+            />
             <span className="font-mono text-[11px] text-text-dim">{STATUS_LABEL[saveStatus]}</span>
           </div>
 
-          <div className="flex gap-0.5 rounded-full border border-border bg-surface-2 p-[3px]">
-            <button
-              onClick={() => onViewChange('month')}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
-                view === 'month' ? 'bg-cyan text-[#04201d]' : 'text-text-dim hover:text-text'
-              }`}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => onViewChange('list')}
-              className={`rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
-                view === 'list' ? 'bg-cyan text-[#04201d]' : 'text-text-dim hover:text-text'
-              }`}
-            >
-              All Weeks
-            </button>
+          <div className="relative flex gap-0.5 rounded-full border border-border bg-surface-2 p-[3px]">
+            {(['month', 'list'] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => onViewChange(v)}
+                className={`relative z-10 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide uppercase transition-colors ${
+                  view === v ? 'text-[#04201d]' : 'text-text-dim hover:text-text'
+                }`}
+              >
+                {view === v && (
+                  <motion.span
+                    layoutId="view-toggle-pill"
+                    transition={{ type: 'spring', stiffness: 500, damping: 32 }}
+                    className="absolute inset-0 -z-10 rounded-full bg-cyan"
+                  />
+                )}
+                {v === 'month' ? 'Month' : 'All Weeks'}
+              </button>
+            ))}
           </div>
 
-          <button
+          <motion.button
+            whileTap={{ scale: 0.92 }}
             onClick={signOut}
             title={user?.email ?? 'Sign out'}
             className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-2 text-text-faint transition-colors hover:border-danger hover:text-danger"
           >
             <LogOut size={14} />
-          </button>
+          </motion.button>
         </div>
       </div>
     </header>

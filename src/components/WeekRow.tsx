@@ -2,7 +2,9 @@ import { ChevronRight, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DOW, addDays, shortDate, toISO } from '../lib/dates';
 import { dayHasData, useWorkoutStore, weekHasData } from '../store/workoutStore';
+import { useToastStore } from '../store/toastStore';
 import DayCard from './DayCard';
+import DatePickerPopover from './DatePickerPopover';
 
 export default function WeekRow({
   monday,
@@ -19,6 +21,7 @@ export default function WeekRow({
   const data = useWorkoutStore((s) => s.data);
   const ensureWeek = useWorkoutStore((s) => s.ensureWeek);
   const duplicateWeek = useWorkoutStore((s) => s.duplicateWeek);
+  const showToast = useToastStore((s) => s.show);
 
   const sunday = addDays(monday, 6);
   const logged = weekHasData(data, mondayISO);
@@ -77,16 +80,16 @@ export default function WeekRow({
           >
             <div className="px-4 pt-1 pb-4">
               <div className="mb-3.5 flex justify-end border-b border-dashed border-border pb-3">
-                <button
-                  onClick={() => {
+                <DatePickerPopover
+                  label="Duplicate to…"
+                  icon={<Layers size={13} />}
+                  defaultDate={addDays(monday, 7)}
+                  onConfirm={(targetISO) => {
                     ensureWeek(mondayISO);
-                    duplicateWeek(mondayISO);
+                    duplicateWeek(mondayISO, targetISO);
+                    showToast('Week duplicated');
                   }}
-                  className="flex items-center gap-1.5 rounded-lg border border-cyan bg-cyan px-3.5 py-2 text-xs font-bold text-[#04201d] hover:bg-[#4bf0e0]"
-                >
-                  <Layers size={13} />
-                  Duplicate &rarr; next week
-                </button>
+                />
               </div>
 
               <div className="flex flex-col gap-2.5">

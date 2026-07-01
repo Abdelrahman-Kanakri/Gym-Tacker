@@ -1,11 +1,19 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { supabase } from '../lib/supabase';
-import { addDays, fromISO, toISO } from '../lib/dates';
-import type { WorkoutData } from '../types/workout';
+import { addDays, fromISO, getMonday, toISO } from '../lib/dates';
+import type { Exercise, WorkoutData } from '../types/workout';
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 9);
+}
+
+function cloneExercises(exercises: Exercise[]): Exercise[] {
+  return exercises.map((ex) => ({
+    id: uid(),
+    name: ex.name,
+    sets: ex.sets.map((s) => ({ ...s })),
+  }));
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -33,12 +41,16 @@ interface WorkoutState {
     dateISO: string,
     exerciseId: string,
     index: number,
-    field: 'weight' | 'reps',
+    field: 'weight' | 'reps' | 'rpe' | 'notes',
     value: string
   ) => void;
 
-  duplicateWeek: (mondayISO: string) => string;
-  copyDayToNextWeek: (mondayISO: string, dateISO: string) => string;
+  duplicateWeek: (mondayISO: string, targetMondayISO?: string) => string;
+  copyDayTo: (mondayISO: string, dateISO: string, targetDateISO?: string) => string;
+
+  saveTemplate: (name: string, exercises: Exercise[]) => void;
+  deleteTemplate: (templateId: string) => void;
+  applyTemplateToDay: (mondayISO: string, dateISO: string, templateId: string) => void;
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
@@ -65,7 +77,7 @@ export const useWorkoutStore = create<WorkoutState>()(
     }
 
     return {
-      data: { weeks: {} },
+      data: { weeks: {}, templates: [] },
       userId: null,
       loading: true,
       saveStatus: 'idle',
@@ -83,7 +95,8 @@ export const useWorkoutStore = create<WorkoutState>()(
           .single();
 
         set((s) => {
-          s.data = !error && row?.data ? (row.data as WorkoutData) : { weeks: {} };
+          const loaded = !error && row?.data ? (row.data as WorkoutData) : { weeks: {} };
+          s.data = { weeks: loaded.weeks ?? {}, templates: loaded.templates ?? [] };
           s.loading = false;
         });
 
@@ -97,7 +110,7 @@ export const useWorkoutStore = create<WorkoutState>()(
               const incoming = (payload.new as { data?: WorkoutData }).data;
               if (incoming) {
                 set((s) => {
-                  s.data = incoming;
+                  s.data = { weeks: incoming.weeks ?? {}, templates: incoming.templates ?? [] };
                 });
               }
             }
@@ -112,7 +125,7 @@ export const useWorkoutStore = create<WorkoutState>()(
         }
         if (saveTimer) clearTimeout(saveTimer);
         set((s) => {
-          s.data = { weeks: {} };
+          s.data = { weeks: {}, templates: [] };
           s.userId = null;
           s.loading = true;
           s.saveStatus = 'idle';
@@ -183,9 +196,9 @@ export const useWorkoutStore = create<WorkoutState>()(
         scheduleSave();
       },
 
-      duplicateWeek: (mondayISO) => {
+      duplicateWeek: (mondayISO, targetMondayISO) => {
         const srcMonday = fromISO(mondayISO);
-        const targetMonday = addDays(srcMonday, 7);
+        const targetMonday = targetMondayISO ? getMonday(fromISO(targetMondayISO)) : addDays(srcMonday, 7);
         const targetISO = toISO(targetMonday);
 
         set((s) => {
@@ -196,11 +209,7 @@ export const useWorkoutStore = create<WorkoutState>()(
             const offset = Math.round((srcDate.getTime() - srcMonday.getTime()) / 86400000);
             const targetDateISO = toISO(addDays(targetMonday, offset));
             target.days[targetDateISO] = {
-              exercises: src.days[dateISO].exercises.map((ex) => ({
-                id: uid(),
-                name: ex.name,
-                sets: ex.sets.map((set) => ({ weight: set.weight, reps: set.reps })),
-              })),
+              exercises: cloneExercises(src.days[dateISO].exercises),
             };
           });
         });
@@ -208,27 +217,49 @@ export const useWorkoutStore = create<WorkoutState>()(
         return targetISO;
       },
 
-      copyDayToNextWeek: (mondayISO, dateISO) => {
+      copyDayTo: (mondayISO, dateISO, targetDateISO) => {
         const monday = fromISO(mondayISO);
         const date = fromISO(dateISO);
         const offset = Math.round((date.getTime() - monday.getTime()) / 86400000);
-        const targetMonday = addDays(monday, 7);
+        const finalTargetDate = targetDateISO ? fromISO(targetDateISO) : addDays(addDays(monday, 7), offset);
+        const targetMonday = getMonday(finalTargetDate);
         const targetISO = toISO(targetMonday);
-        const targetDateISO = toISO(addDays(targetMonday, offset));
+        const targetDateFinalISO = toISO(finalTargetDate);
 
         set((s) => {
           const srcDay = s.data.weeks[mondayISO].days[dateISO];
           const targetWeek = s.data.weeks[targetISO] ?? (s.data.weeks[targetISO] = { days: {} });
-          targetWeek.days[targetDateISO] = {
-            exercises: srcDay.exercises.map((ex) => ({
-              id: uid(),
-              name: ex.name,
-              sets: ex.sets.map((set) => ({ weight: set.weight, reps: set.reps })),
-            })),
+          targetWeek.days[targetDateFinalISO] = {
+            exercises: cloneExercises(srcDay.exercises),
           };
         });
         scheduleSave();
         return targetISO;
+      },
+
+      saveTemplate: (name, exercises) => {
+        set((s) => {
+          if (!s.data.templates) s.data.templates = [];
+          s.data.templates.push({ id: uid(), name, exercises: cloneExercises(exercises) });
+        });
+        scheduleSave();
+      },
+
+      deleteTemplate: (templateId) => {
+        set((s) => {
+          s.data.templates = (s.data.templates ?? []).filter((t) => t.id !== templateId);
+        });
+        scheduleSave();
+      },
+
+      applyTemplateToDay: (mondayISO, dateISO, templateId) => {
+        set((s) => {
+          const template = (s.data.templates ?? []).find((t) => t.id === templateId);
+          if (!template) return;
+          const day = s.data.weeks[mondayISO].days[dateISO];
+          day.exercises.push(...cloneExercises(template.exercises));
+        });
+        scheduleSave();
       },
     };
   })

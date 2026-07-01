@@ -1,6 +1,8 @@
 export interface SetEntry {
   weight: string;
   reps: string;
+  rpe?: string;
+  notes?: string;
 }
 
 export interface Exercise {
@@ -17,8 +19,15 @@ export interface WeekLog {
   days: Record<string, DayLog>; // key: date ISO (yyyy-mm-dd)
 }
 
-export interface WorkoutData {
-  weeks: Record<string, WeekLog>; // key: Monday ISO (yyyy-mm-dd)
+export interface WorkoutTemplate {
+  id: string;
+  name: string;
+  exercises: Exercise[];
 }
 
-export const emptyWorkoutData = (): WorkoutData => ({ weeks: {} });
+export interface WorkoutData {
+  weeks: Record<string, WeekLog>; // key: Monday ISO (yyyy-mm-dd)
+  templates?: WorkoutTemplate[];
+}
+
+export const emptyWorkoutData = (): WorkoutData => ({ weeks: {}, templates: [] });
