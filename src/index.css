@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+
+  --color-bg: #0a0f10;
+  --color-surface: #0f1618;
+  --color-surface-2: #141d20;
+  --color-surface-3: #1a2528;
+  --color-border: #1f2b2e;
+  --color-border-soft: #182123;
+  --color-text: #e7f1f1;
+  --color-text-dim: #7f9497;
+  --color-text-faint: #4c5c5f;
+  --color-cyan: #2ee6d6;
+  --color-cyan-dim: #1a8e83;
+  --color-amber: #ffb020;
+  --color-danger: #ff6b6b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-bg);
+  background-image: radial-gradient(circle at 15% 0%, rgba(46, 230, 214, 0.06), transparent 45%);
+  color: var(--color-text);
+  font-family: var(--font-display);
+}
+
+::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+input:focus {
+  outline: none;
+}
+
+.glow-cyan {
+  box-shadow: 0 0 16px rgba(46, 230, 214, 0.18), 0 0 4px rgba(46, 230, 214, 0.4);
+}

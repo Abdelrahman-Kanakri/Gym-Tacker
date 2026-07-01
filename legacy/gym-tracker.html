@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRON LOG — Gym Progression Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --bg:#0a0f10;
+    --surface:#0f1618;
+    --surface-2:#141d20;
+    --surface-3:#1a2528;
+    --border:#1f2b2e;
+    --border-soft:#182123;
+    --text:#e7f1f1;
+    --text-dim:#7f9497;
+    --text-faint:#4c5c5f;
+    --cyan:#2ee6d6;
+    --cyan-dim:#1a8e83;
+    --cyan-glow:rgba(46,230,214,0.18);
+    --amber:#ffb020;
+    --danger:#ff6b6b;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(46,230,214,0.05), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Space Grotesk', system-ui, sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  a{color:inherit;}
+
+  /* ---------- Header ---------- */
+  header{
+    position:sticky; top:0; z-index:20;
+    background:rgba(10,15,16,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+    padding:18px 22px 14px;
+  }
+  .header-row{
+    display:flex; align-items:center; justify-content:space-between;
+    max-width:960px; margin:0 auto;
+    flex-wrap:wrap; gap:12px;
+  }
+  .brand{display:flex; align-items:baseline; gap:10px;}
+  .brand-mark{
+    width:10px; height:10px; border-radius:2px;
+    background:var(--cyan);
+    box-shadow:0 0 12px var(--cyan-glow), 0 0 4px var(--cyan);
+  }
+  .brand h1{
+    font-size:19px; letter-spacing:0.14em; margin:0;
+    font-weight:700; text-transform:uppercase;
+  }
+  .brand span{color:var(--cyan);}
+  .brand small{
+    display:block; font-size:10px; color:var(--text-faint);
+    letter-spacing:0.12em; text-transform:uppercase; margin-top:2px;
+  }
+  .view-toggle{
+    display:flex; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:999px; padding:3px; gap:2px;
+  }
+  .view-toggle button{
+    border:none; background:transparent; color:var(--text-dim);
+    font-family:inherit; font-size:12px; letter-spacing:0.06em;
+    text-transform:uppercase; padding:7px 16px; border-radius:999px;
+    cursor:pointer; transition:all .15s ease; font-weight:600;
+  }
+  .view-toggle button.active{
+    background:var(--cyan); color:#04201d;
+  }
+
+  main{max-width:960px; margin:0 auto; padding:22px;}
+
+  /* ---------- Month nav ---------- */
+  .month-nav{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .month-nav h2{
+    font-size:22px; margin:0; font-weight:600; letter-spacing:0.01em;
+  }
+  .month-nav .nav-btns{display:flex; gap:8px;}
+  .nav-btns button{
+    width:34px; height:34px; border-radius:8px;
+    background:var(--surface-2); border:1px solid var(--border);
+    color:var(--text-dim); cursor:pointer; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .15s ease;
+  }
+  .nav-btns button:hover{border-color:var(--cyan-dim); color:var(--cyan);}
+
+  /* ---------- Week row (month view) ---------- */
+  .week-row{
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius); margin-bottom:10px; overflow:hidden;
+    transition:border-color .15s ease;
+  }
+  .week-row.expanded{border-color:var(--cyan-dim);}
+  .week-row-head{
+    display:flex; align-items:center; gap:16px;
+    padding:13px 16px; cursor:pointer; user-select:none;
+  }
+  .week-row-head:hover{background:var(--surface-2);}
+  .week-label{
+    font-size:11px; color:var(--text-faint); text-transform:uppercase;
+    letter-spacing:0.08em; width:92px; flex-shrink:0;
+  }
+  .week-label b{display:block; color:var(--text-dim); font-size:12px; margin-top:2px;}
+  .day-dots{display:flex; gap:6px; flex:1;}
+  .day-dot{
+    flex:1; text-align:center; padding:4px 0; border-radius:6px;
+    font-size:9px; letter-spacing:0.05em; color:var(--text-faint);
+    background:var(--surface-2); border:1px solid var(--border-soft);
+  }
+  .day-dot.out{opacity:0.35;}
+  .day-dot.logged{
+    background:var(--cyan-glow); border-color:var(--cyan-dim); color:var(--cyan);
+    font-weight:600;
+  }
+  .week-caret{
+    color:var(--text-faint); font-size:12px; transition:transform .2s ease;
+    flex-shrink:0; width:16px; text-align:center;
+  }
+  .week-row.expanded .week-caret{transform:rotate(90deg); color:var(--cyan);}
+
+  .week-body{padding:4px 16px 16px;}
+  .week-actions{
+    display:flex; justify-content:flex-end; gap:8px; padding:0 0 12px;
+    border-bottom:1px dashed var(--border); margin-bottom:14px;
+  }
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    font-family:inherit; font-size:12px; font-weight:600; letter-spacing:0.03em;
+    padding:8px 14px; border-radius:7px; cursor:pointer; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text-dim); transition:all .15s ease;
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn:hover{border-color:var(--cyan-dim); color:var(--text);}
+  .btn-primary{
+    background:var(--cyan); color:#04201d; border-color:var(--cyan);
+  }
+  .btn-primary:hover{background:#4bf0e0; color:#04201d;}
+  .btn-ghost{background:transparent; border-color:transparent; color:var(--text-faint); padding:6px 8px;}
+  .btn-ghost:hover{color:var(--danger); border-color:transparent; background:transparent;}
+  .btn-sm{padding:5px 10px; font-size:11px;}
+
+  /* ---------- Day cards ---------- */
+  .day-grid{display:flex; flex-direction:column; gap:10px;}
+  .day-card{
+    background:var(--surface-2); border:1px solid var(--border-soft);
+    border-radius:var(--radius); padding:14px;
+  }
+  .day-card-head{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;
+  }
+  .day-title{display:flex; align-items:baseline; gap:8px;}
+  .day-title .dow{font-size:13px; font-weight:700; letter-spacing:0.04em;}
+  .day-title .date{font-size:11px; color:var(--text-faint);}
+  .day-head-actions{display:flex; gap:6px;}
+
+  .exercise{
+    background:var(--surface); border:1px solid var(--border-soft);
+    border-radius:8px; padding:10px 12px; margin-bottom:8px;
+  }
+  .exercise-head{
+    display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  }
+  .exercise-name-input{
+    flex:1; background:transparent; border:none; color:var(--text);
+    font-family:'Space Grotesk'; font-size:14px; font-weight:600;
+    padding:4px 2px; border-bottom:1px solid transparent;
+  }
+  .exercise-name-input:focus{outline:none; border-bottom:1px solid var(--cyan-dim);}
+  .exercise-name-input::placeholder{color:var(--text-faint); font-weight:500;}
+
+  .sets-row{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .set-chip{
+    display:flex; align-items:center; gap:5px;
+    background:var(--surface-3); border:1px solid var(--border);
+    border-radius:999px; padding:4px 6px 4px 10px;
+  }
+  .set-chip.top-set{
+    border-color:var(--cyan); background:var(--cyan-glow);
+    box-shadow:0 0 8px rgba(46,230,214,0.12);
+  }
+  .set-chip input{
+    width:34px; background:transparent; border:none; color:var(--text);
+    font-family:'IBM Plex Mono'; font-size:12px; text-align:center;
+  }
+  .set-chip input:focus{outline:none;}
+  .set-chip .x{font-size:11px; color:var(--text-faint);}
+  .set-chip .rm{
+    color:var(--text-faint); cursor:pointer; font-size:13px; line-height:1;
+    padding:2px 3px;
+  }
+  .set-chip .rm:hover{color:var(--danger);}
+  .add-set-btn{
+    width:26px; height:26px; border-radius:999px; border:1px dashed var(--border);
+    background:transparent; color:var(--text-faint); cursor:pointer; font-size:14px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .add-set-btn:hover{border-color:var(--cyan); color:var(--cyan);}
+
+  .empty-day{
+    text-align:center; padding:18px 0; color:var(--text-faint); font-size:12px;
+  }
+
+  .add-exercise-row{margin-top:6px;}
+
+  /* ---------- List view ---------- */
+  .list-hint{
+    font-size:12px; color:var(--text-faint); margin-bottom:14px;
+  }
+
+  /* ---------- Empty state ---------- */
+  .month-empty{
+    text-align:center; padding:60px 20px; color:var(--text-faint);
+  }
+  .month-empty .glyph{font-size:28px; color:var(--cyan-dim); margin-bottom:10px;}
+
+  footer{
+    text-align:center; color:var(--text-faint); font-size:11px; padding:24px;
+    letter-spacing:0.04em;
+  }
+
+  ::-webkit-scrollbar{height:6px; width:6px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+
+  @media (max-width:600px){
+    .week-label{width:60px; font-size:10px;}
+    .day-dot{font-size:8px;}
+    header{padding:14px;}
+    main{padding:14px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>IRON<span>LOG</span></h1>
+        <small>weekly progression tracker</small>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button id="syncBtn" class="btn btn-sm" title="Sync across devices">
+        <span id="syncDot" style="width:7px; height:7px; border-radius:50%; background:var(--text-faint); display:inline-block;"></span>
+        <span id="syncLabel">Sync</span>
+      </button>
+      <div class="view-toggle">
+        <button id="tabMonth" class="active">Month</button>
+        <button id="tabList">All Weeks</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="syncModalBackdrop" style="display:none; position:fixed; inset:0; background:rgba(4,8,9,0.7); z-index:50; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); max-width:420px; width:100%; padding:22px;">
+    <h3 style="margin:0 0 4px; font-size:16px;">Sync across devices</h3>
+    <p style="color:var(--text-dim); font-size:13px; line-height:1.5; margin:0 0 16px;">
+      This device has its own sync code. To see the same log on your phone and desktop, open the tracker on the other device and paste this code in there — or paste a code from another device below to link this one to it.
+    </p>
+    <label style="font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em;">This device's code</label>
+    <div style="display:flex; gap:6px; margin:6px 0 16px;">
+      <input id="syncCodeDisplay" readonly class="mono" style="flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:9px 10px; color:var(--cyan); font-size:12px;">
+      <button id="copyCodeBtn" class="btn btn-sm">Copy</button>
+    </div>
+    <label style="font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em;">Link to another code</label>
+    <div style="display:flex; gap:6px; margin:6px 0 4px;">
+      <input id="syncCodeInput" placeholder="Paste sync code" class="mono" style="flex:1; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:9px 10px; color:var(--text); font-size:12px;">
+      <button id="linkCodeBtn" class="btn btn-primary btn-sm">Link</button>
+    </div>
+    <p id="syncError" style="color:var(--danger); font-size:12px; margin:8px 0 0; display:none;"></p>
+    <button id="closeSyncModal" class="btn btn-sm" style="margin-top:18px; width:100%;">Close</button>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer>Logged locally on this device — no account, no sync.</footer>
+
+<script>
+/* ============ STORAGE (Supabase-backed, localStorage cache) ============ */
+const SUPABASE_URL = 'https://gplsrtovcvirqebsfomf.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdwbHNydG92Y3ZpcnFlYnNmb21mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4OTI3MjYsImV4cCI6MjA5ODQ2ODcyNn0.eDzctzvc1zDl_ICtiPCtlfLw6BZtQrGs60wlNX_S-RI';
+const DEVICE_KEY = 'ironlog-sync-code';
+const CACHE_KEY = 'ironlog-data-cache-v1';
+
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+function getCachedState(){
+  try{
+    const raw = localStorage.getItem(CACHE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { weeks:{} };
+}
+function cacheState(){
+  localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+}
+
+let state = getCachedState();
+let syncCode = localStorage.getItem(DEVICE_KEY) || null;
+let saveTimer = null;
+let saveInFlight = false;
+
+function setSyncStatus(mode){
+  // mode: 'offline' | 'syncing' | 'synced' | 'error'
+  const dot = document.getElementById('syncDot');
+  const label = document.getElementById('syncLabel');
+  if(!dot) return;
+  const colors = { offline:'var(--text-faint)', syncing:'var(--amber)', synced:'var(--cyan)', error:'var(--danger)' };
+  const labels = { offline:'Local only', syncing:'Syncing…', synced:'Synced', error:'Sync error' };
+  dot.style.background = colors[mode];
+  dot.style.boxShadow = mode==='synced' ? '0 0 6px var(--cyan)' : 'none';
+  label.textContent = labels[mode];
+}
+
+async function initSync(){
+  if(!syncCode){
+    // first time on this device: create a new row, get its id as the sync code
+    const { data, error } = await sb.from('iron_log_state').insert({ data: state }).select('user_id').single();
+    if(error){ console.error(error); setSyncStatus('error'); return; }
+    syncCode = data.user_id;
+    localStorage.setItem(DEVICE_KEY, syncCode);
+    setSyncStatus('synced');
+  } else {
+    // existing device: pull latest from the server
+    setSyncStatus('syncing');
+    const { data, error } = await sb.from('iron_log_state').select('data').eq('user_id', syncCode).single();
+    if(error || !data){
+      console.error(error);
+      setSyncStatus('error');
+      return;
+    }
+    state = data.data || { weeks:{} };
+    cacheState();
+    setSyncStatus('synced');
+    render();
+  }
+}
+
+function saveState(){
+  cacheState();
+  buildDatalist();
+  clearTimeout(saveTimer);
+  setSyncStatus('syncing');
+  saveTimer = setTimeout(pushToServer, 600);
+}
+
+async function pushToServer(){
+  if(!syncCode) return;
+  saveInFlight = true;
+  const { error } = await sb.from('iron_log_state')
+    .update({ data: state, updated_at: new Date().toISOString() })
+    .eq('user_id', syncCode);
+  saveInFlight = false;
+  setSyncStatus(error ? 'error' : 'synced');
+  if(error) console.error(error);
+}
+
+/* ============ DATE HELPERS ============ */
+const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function pad(n){ return n<10 ? '0'+n : ''+n; }
+function toISO(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fromISO(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y, m-1, d); }
+function getMonday(d){
+  const date = new Date(d);
+  const day = date.getDay(); // 0 = Sun
+  const diff = (day === 0 ? -6 : 1 - day);
+  date.setDate(date.getDate() + diff);
+  date.setHours(0,0,0,0);
+  return date;
+}
+function addDays(d, n){ const nd = new Date(d); nd.setDate(nd.getDate()+n); return nd; }
+function shortDate(d){ return d.toLocaleDateString(undefined,{month:'short', day:'numeric'}); }
+
+/* ============ STATE ACCESSORS ============ */
+function ensureWeek(mondayISO){
+  if(!state.weeks[mondayISO]){
+    state.weeks[mondayISO] = { days:{} };
+  }
+  return state.weeks[mondayISO];
+}
+function ensureDay(mondayISO, dateISO){
+  const w = ensureWeek(mondayISO);
+  if(!w.days[dateISO]) w.days[dateISO] = { exercises:[] };
+  return w.days[dateISO];
+}
+function weekHasData(mondayISO){
+  const w = state.weeks[mondayISO];
+  if(!w) return false;
+  return Object.values(w.days).some(d => d.exercises && d.exercises.length>0);
+}
+function dayHasData(mondayISO, dateISO){
+  const w = state.weeks[mondayISO];
+  if(!w || !w.days[dateISO]) return false;
+  return w.days[dateISO].exercises.length>0;
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+
+/* ============ APP STATE ============ */
+let currentView = 'month'; // 'month' | 'list'
+let viewDate = new Date(); // controls which month is shown
+let expandedWeeks = new Set(); // mondayISO strings currently expanded
+
+/* ============ RENDER: ROOT ============ */
+function render(){
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+  if(currentView === 'month'){
+    main.appendChild(renderMonthView());
+  } else {
+    main.appendChild(renderListView());
+  }
+}
+
+/* ============ RENDER: MONTH VIEW ============ */
+function renderMonthView(){
+  const wrap = document.createElement('div');
+
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+
+  const nav = document.createElement('div');
+  nav.className = 'month-nav';
+  nav.innerHTML = `
+    <h2>${MONTH_NAMES[month]} <span class="mono" style="color:var(--text-faint); font-size:16px;">${year}</span></h2>
+    <div class="nav-btns">
+      <button id="prevMonth">&#8249;</button>
+      <button id="todayBtn" style="width:auto; padding:0 12px; font-size:11px; letter-spacing:.05em; text-transform:uppercase;">Today</button>
+      <button id="nextMonth">&#8250;</button>
+    </div>
+  `;
+  wrap.appendChild(nav);
+
+  // find first Monday on/before day 1, last Sunday on/after last day
+  const firstOfMonth = new Date(year, month, 1);
+  const lastOfMonth = new Date(year, month+1, 0);
+  let cursor = getMonday(firstOfMonth);
+  const weeksList = [];
+  while(cursor <= lastOfMonth){
+    weeksList.push(new Date(cursor));
+    cursor = addDays(cursor, 7);
+  }
+
+  if(weeksList.length === 0){
+    wrap.appendChild(emptyState());
+    return wrap;
+  }
+
+  weeksList.forEach(monday => {
+    wrap.appendChild(renderWeekRow(monday, month));
+  });
+
+  requestAnimationFrame(()=>{
+    document.getElementById('prevMonth').onclick = ()=>{ viewDate = new Date(year, month-1, 1); render(); };
+    document.getElementById('nextMonth').onclick = ()=>{ viewDate = new Date(year, month+1, 1); render(); };
+    document.getElementById('todayBtn').onclick = ()=>{ viewDate = new Date(); render(); };
+  });
+
+  return wrap;
+}
+
+function emptyState(){
+  const div = document.createElement('div');
+  div.className = 'month-empty';
+  div.innerHTML = `<div class="glyph">&#9679;</div><div>No weeks here yet.</div>`;
+  return div;
+}
+
+/* ============ RENDER: WEEK ROW (shared by month + list) ============ */
+function renderWeekRow(monday, contextMonth){
+  const mondayISO = toISO(monday);
+  const isExpanded = expandedWeeks.has(mondayISO);
+
+  const row = document.createElement('div');
+  row.className = 'week-row' + (isExpanded ? ' expanded' : '');
+
+  const head = document.createElement('div');
+  head.className = 'week-row-head';
+
+  const sunday = addDays(monday, 6);
+  const label = document.createElement('div');
+  label.className = 'week-label';
+  label.innerHTML = `${shortDate(monday)}&ndash;${shortDate(sunday)}<b>${weekHasData(mondayISO) ? 'Logged' : 'Empty'}</b>`;
+  head.appendChild(label);
+
+  const dots = document.createElement('div');
+  dots.className = 'day-dots';
+  for(let i=0;i<7;i++){
+    const d = addDays(monday, i);
+    const iso = toISO(d);
+    const dot = document.createElement('div');
+    const outOfMonth = contextMonth !== undefined && d.getMonth() !== contextMonth;
+    dot.className = 'day-dot' + (outOfMonth ? ' out' : '') + (dayHasData(mondayISO, iso) ? ' logged' : '');
+    dot.textContent = DOW[i][0];
+    dots.appendChild(dot);
+  }
+  head.appendChild(dots);
+
+  const caret = document.createElement('div');
+  caret.className = 'week-caret';
+  caret.innerHTML = '&#9656;';
+  head.appendChild(caret);
+
+  head.onclick = ()=>{
+    if(isExpanded) expandedWeeks.delete(mondayISO);
+    else expandedWeeks.add(mondayISO);
+    render();
+  };
+  row.appendChild(head);
+
+  if(isExpanded){
+    row.appendChild(renderWeekBody(monday));
+  }
+
+  return row;
+}
+
+/* ============ RENDER: WEEK BODY (day cards) ============ */
+function renderWeekBody(monday){
+  const mondayISO = toISO(monday);
+  ensureWeek(mondayISO);
+
+  const body = document.createElement('div');
+  body.className = 'week-body';
+
+  const actions = document.createElement('div');
+  actions.className = 'week-actions';
+  const dupBtn = document.createElement('button');
+  dupBtn.className = 'btn btn-primary btn-sm';
+  dupBtn.innerHTML = 'Duplicate &rarr; next week';
+  dupBtn.onclick = ()=> duplicateWeek(mondayISO);
+  actions.appendChild(dupBtn);
+  body.appendChild(actions);
+
+  const grid = document.createElement('div');
+  grid.className = 'day-grid';
+
+  for(let i=0;i<7;i++){
+    const d = addDays(monday, i);
+    const iso = toISO(d);
+    grid.appendChild(renderDayCard(mondayISO, iso, DOW[i], d));
+  }
+  body.appendChild(grid);
+  return body;
+}
+
+/* ============ RENDER: DAY CARD ============ */
+function renderDayCard(mondayISO, dateISO, dowLabel, dateObj){
+  const day = ensureDay(mondayISO, dateISO);
+
+  const card = document.createElement('div');
+  card.className = 'day-card';
+
+  const head = document.createElement('div');
+  head.className = 'day-card-head';
+  head.innerHTML = `
+    <div class="day-title">
+      <span class="dow">${dowLabel}</span>
+      <span class="date mono">${shortDate(dateObj)}</span>
+    </div>
+  `;
+  const headActions = document.createElement('div');
+  headActions.className = 'day-head-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn btn-sm';
+  copyBtn.title = 'Copy this day to next week, same weekday';
+  copyBtn.textContent = 'Copy \u2192 next wk';
+  copyBtn.onclick = ()=> copyDayToNextWeek(mondayISO, dateISO);
+  headActions.appendChild(copyBtn);
+
+  head.appendChild(headActions);
+  card.appendChild(head);
+
+  if(day.exercises.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'empty-day';
+    empty.textContent = 'Rest day — nothing logged';
+    card.appendChild(empty);
+  } else {
+    day.exercises.forEach(ex => card.appendChild(renderExercise(mondayISO, dateISO, ex)));
+  }
+
+  const addRow = document.createElement('div');
+  addRow.className = 'add-exercise-row';
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn btn-sm';
+  addBtn.textContent = '+ Add exercise';
+  addBtn.onclick = ()=>{
+    day.exercises.push({ id: uid(), name:'', sets:[{weight:'', reps:''}] });
+    saveState();
+    render();
+  };
+  addRow.appendChild(addBtn);
+  card.appendChild(addRow);
+
+  return card;
+}
+
+/* ============ RENDER: EXERCISE ============ */
+function renderExercise(mondayISO, dateISO, ex){
+  const day = ensureDay(mondayISO, dateISO);
+  const wrap = document.createElement('div');
+  wrap.className = 'exercise';
+
+  const head = document.createElement('div');
+  head.className = 'exercise-head';
+
+  const nameInput = document.createElement('input');
+  nameInput.className = 'exercise-name-input';
+  nameInput.placeholder = 'Exercise name';
+  nameInput.value = ex.name;
+  nameInput.setAttribute('list','exercise-suggestions');
+  nameInput.oninput = ()=>{ ex.name = nameInput.value; saveState(); };
+  head.appendChild(nameInput);
+
+  const delExBtn = document.createElement('button');
+  delExBtn.className = 'btn-ghost';
+  delExBtn.innerHTML = '&#10005;';
+  delExBtn.title = 'Remove exercise';
+  delExBtn.onclick = ()=>{
+    day.exercises = day.exercises.filter(e=>e.id!==ex.id);
+    saveState(); render();
+  };
+  head.appendChild(delExBtn);
+  wrap.appendChild(head);
+
+  const setsRow = document.createElement('div');
+  setsRow.className = 'sets-row';
+
+  // determine top set (max weight) for highlight
+  let topIdx = -1, topWeight = -Infinity;
+  ex.sets.forEach((s,i)=>{
+    const w = parseFloat(s.weight);
+    if(!isNaN(w) && w>topWeight){ topWeight=w; topIdx=i; }
+  });
+
+  ex.sets.forEach((s, i)=>{
+    const chip = document.createElement('div');
+    chip.className = 'set-chip' + (i===topIdx && topWeight>-Infinity ? ' top-set' : '');
+
+    const wInput = document.createElement('input');
+    wInput.type = 'text'; wInput.inputMode='decimal';
+    wInput.placeholder='kg'; wInput.value = s.weight;
+    wInput.oninput = ()=>{ s.weight = wInput.value; saveState(); refreshTopSetHighlight(); };
+
+    const x = document.createElement('span');
+    x.className = 'x'; x.textContent = '\u00d7';
+
+    const rInput = document.createElement('input');
+    rInput.type='text'; rInput.inputMode='numeric';
+    rInput.placeholder='reps'; rInput.value = s.reps;
+    rInput.oninput = ()=>{ s.reps = rInput.value; saveState(); };
+
+    const rm = document.createElement('span');
+    rm.className = 'rm'; rm.innerHTML='&#10005;';
+    rm.onclick = ()=>{
+      ex.sets = ex.sets.filter((_,idx)=>idx!==i);
+      saveState(); render();
+    };
+
+    chip.appendChild(wInput);
+    chip.appendChild(x);
+    chip.appendChild(rInput);
+    chip.appendChild(rm);
+    setsRow.appendChild(chip);
+  });
+
+  const addSetBtn = document.createElement('button');
+  addSetBtn.className = 'add-set-btn';
+  addSetBtn.innerHTML = '+';
+  addSetBtn.title = 'Add set';
+  addSetBtn.onclick = ()=>{
+    const last = ex.sets[ex.sets.length-1];
+    ex.sets.push({ weight: last ? last.weight : '', reps: last ? last.reps : '' });
+    saveState(); render();
+  };
+  setsRow.appendChild(addSetBtn);
+
+  wrap.appendChild(setsRow);
+
+  function refreshTopSetHighlight(){
+    // lightweight: full re-render keeps it simple & correct
+  }
+
+  return wrap;
+}
+
+/* ============ ACTIONS ============ */
+function duplicateWeek(mondayISO){
+  const srcMonday = fromISO(mondayISO);
+  const targetMonday = addDays(srcMonday, 7);
+  const targetISO = toISO(targetMonday);
+  const src = state.weeks[mondayISO];
+  const target = ensureWeek(targetISO);
+
+  Object.keys(src.days).forEach(dateISO => {
+    const srcDate = fromISO(dateISO);
+    const offset = Math.round((srcDate - srcMonday) / 86400000);
+    const targetDate = addDays(targetMonday, offset);
+    const targetDateISO = toISO(targetDate);
+    target.days[targetDateISO] = {
+      exercises: src.days[dateISO].exercises.map(ex => ({
+        id: uid(),
+        name: ex.name,
+        sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps }))
+      }))
+    };
+  });
+
+  saveState();
+  expandedWeeks.add(targetISO);
+  // jump view to whatever month the new week falls in, if in month view
+  if(currentView === 'month') viewDate = new Date(targetMonday);
+  render();
+}
+
+function copyDayToNextWeek(mondayISO, dateISO){
+  const monday = fromISO(mondayISO);
+  const date = fromISO(dateISO);
+  const offset = Math.round((date - monday) / 86400000);
+  const targetMonday = addDays(monday, 7);
+  const targetISO = toISO(targetMonday);
+  const targetDate = addDays(targetMonday, offset);
+  const targetDateISO = toISO(targetDate);
+
+  const srcDay = state.weeks[mondayISO].days[dateISO];
+  const targetWeek = ensureWeek(targetISO);
+  targetWeek.days[targetDateISO] = {
+    exercises: srcDay.exercises.map(ex => ({
+      id: uid(),
+      name: ex.name,
+      sets: ex.sets.map(s => ({ weight: s.weight, reps: s.reps }))
+    }))
+  };
+  saveState();
+  expandedWeeks.add(targetISO);
+  render();
+}
+
+/* ============ RENDER: LIST VIEW ============ */
+function renderListView(){
+  const wrap = document.createElement('div');
+  const hint = document.createElement('div');
+  hint.className = 'list-hint';
+  hint.textContent = 'Every logged week, most recent first.';
+  wrap.appendChild(hint);
+
+  const mondayKeys = Object.keys(state.weeks)
+    .filter(k => weekHasData(k))
+    .sort((a,b)=> b.localeCompare(a));
+
+  if(mondayKeys.length === 0){
+    const empty = document.createElement('div');
+    empty.className = 'month-empty';
+    empty.innerHTML = `<div class="glyph">&#9679;</div><div>Nothing logged yet. Switch to Month view and start your first week.</div>`;
+    wrap.appendChild(empty);
+    return wrap;
+  }
+
+  mondayKeys.forEach(k => wrap.appendChild(renderWeekRow(fromISO(k))));
+  return wrap;
+}
+
+/* ============ EXERCISE AUTOSUGGEST ============ */
+function buildDatalist(){
+  let dl = document.getElementById('exercise-suggestions');
+  if(!dl){
+    dl = document.createElement('datalist');
+    dl.id = 'exercise-suggestions';
+    document.body.appendChild(dl);
+  }
+  const names = new Set();
+  Object.values(state.weeks).forEach(w=>{
+    Object.values(w.days).forEach(d=>{
+      d.exercises.forEach(ex=>{ if(ex.name) names.add(ex.name); });
+    });
+  });
+  dl.innerHTML = '';
+  names.forEach(n=>{
+    const opt = document.createElement('option');
+    opt.value = n;
+    dl.appendChild(opt);
+  });
+}
+
+/* ============ INIT ============ */
+document.getElementById('tabMonth').onclick = ()=>{
+  currentView='month';
+  document.getElementById('tabMonth').classList.add('active');
+  document.getElementById('tabList').classList.remove('active');
+  render();
+};
+document.getElementById('tabList').onclick = ()=>{
+  currentView='list';
+  document.getElementById('tabList').classList.add('active');
+  document.getElementById('tabMonth').classList.remove('active');
+  render();
+};
+
+// ensure current week exists so first-time users land on something editable
+(function bootstrap(){
+  const thisMonday = toISO(getMonday(new Date()));
+  ensureWeek(thisMonday);
+  expandedWeeks.add(thisMonday);
+  saveState();
+})();
+
+buildDatalist();
+render();
+initSync();
+
+/* ============ SYNC MODAL WIRING ============ */
+const syncModal = document.getElementById('syncModalBackdrop');
+document.getElementById('syncBtn').onclick = ()=>{
+  document.getElementById('syncCodeDisplay').value = syncCode || 'Setting up…';
+  document.getElementById('syncError').style.display = 'none';
+  document.getElementById('syncCodeInput').value = '';
+  syncModal.style.display = 'flex';
+};
+document.getElementById('closeSyncModal').onclick = ()=>{ syncModal.style.display = 'none'; };
+syncModal.onclick = (e)=>{ if(e.target === syncModal) syncModal.style.display = 'none'; };
+
+document.getElementById('copyCodeBtn').onclick = ()=>{
+  const input = document.getElementById('syncCodeDisplay');
+  input.select();
+  navigator.clipboard && navigator.clipboard.writeText(input.value).catch(()=>{});
+  const btn = document.getElementById('copyCodeBtn');
+  const orig = btn.textContent;
+  btn.textContent = 'Copied';
+  setTimeout(()=>{ btn.textContent = orig; }, 1200);
+};
+
+document.getElementById('linkCodeBtn').onclick = async ()=>{
+  const code = document.getElementById('syncCodeInput').value.trim();
+  const errEl = document.getElementById('syncError');
+  errEl.style.display = 'none';
+  if(!code){ return; }
+  setSyncStatus('syncing');
+  const { data, error } = await sb.from('iron_log_state').select('data').eq('user_id', code).single();
+  if(error || !data){
+    errEl.textContent = "Couldn't find that sync code. Double-check it and try again.";
+    errEl.style.display = 'block';
+    setSyncStatus('error');
+    return;
+  }
+  syncCode = code;
+  localStorage.setItem(DEVICE_KEY, syncCode);
+  state = data.data || { weeks:{} };
+  cacheState();
+  expandedWeeks = new Set();
+  const thisMonday = toISO(getMonday(new Date()));
+  expandedWeeks.add(thisMonday);
+  buildDatalist();
+  render();
+  setSyncStatus('synced');
+  syncModal.style.display = 'none';
+};
+</script>
+</body>
+</html>
