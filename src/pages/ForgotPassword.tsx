@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { EMAIL_PASSWORD_AUTH_ENABLED } from '../lib/featureFlags';
 import AuthCard from '../components/AuthCard';
 
 export default function ForgotPassword() {
@@ -9,6 +10,22 @@ export default function ForgotPassword() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+
+  if (!EMAIL_PASSWORD_AUTH_ENABLED) {
+    return (
+      <AuthCard title="Unavailable for now" subtitle="Password reset isn't available yet.">
+        <p className="m-0 text-sm text-text-dim">
+          Email/password sign-in is temporarily unavailable. Continue with Google instead.
+        </p>
+        <Link
+          to="/login"
+          className="mt-5 block w-full rounded-lg border border-cyan bg-cyan py-2.5 text-center text-sm font-bold text-[#04201d] hover:bg-[#4bf0e0]"
+        >
+          Back to login
+        </Link>
+      </AuthCard>
+    );
+  }
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

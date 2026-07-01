@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { EMAIL_PASSWORD_AUTH_ENABLED } from '../lib/featureFlags';
 import AuthCard from '../components/AuthCard';
 import GoogleIcon from '../components/GoogleIcon';
 
@@ -60,54 +61,62 @@ export default function Signup() {
         type="button"
         onClick={onGoogle}
         disabled={googleLoading}
-        className="mb-4 flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface-2 py-2.5 text-sm font-semibold text-text transition-colors hover:border-cyan-dim disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2.5 rounded-lg border border-border bg-surface-2 py-2.5 text-sm font-semibold text-text transition-colors hover:border-cyan-dim disabled:opacity-60"
       >
         <GoogleIcon />
         {googleLoading ? 'Redirecting…' : 'Continue with Google'}
       </button>
 
-      <div className="mb-4 flex items-center gap-3 text-[11px] tracking-widest text-text-faint uppercase">
-        <span className="h-px flex-1 bg-border" />
-        or
-        <span className="h-px flex-1 bg-border" />
-      </div>
+      {error && <p className="m-0 mt-3 text-xs text-danger">{error}</p>}
 
-      <form onSubmit={onSubmit} className="flex flex-col gap-3">
-        <div>
-          <label className="mb-1.5 block text-[11px] tracking-wider text-text-faint uppercase">Email</label>
-          <input
-            type="email"
-            required
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-cyan-dim"
-            placeholder="you@example.com"
-          />
-        </div>
-        <div>
-          <label className="mb-1.5 block text-[11px] tracking-wider text-text-faint uppercase">Password</label>
-          <input
-            type="password"
-            required
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-cyan-dim"
-            placeholder="At least 6 characters"
-          />
-        </div>
+      {EMAIL_PASSWORD_AUTH_ENABLED ? (
+        <>
+          <div className="my-4 flex items-center gap-3 text-[11px] tracking-widest text-text-faint uppercase">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
-        {error && <p className="m-0 text-xs text-danger">{error}</p>}
+          <form onSubmit={onSubmit} className="flex flex-col gap-3">
+            <div>
+              <label className="mb-1.5 block text-[11px] tracking-wider text-text-faint uppercase">Email</label>
+              <input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-cyan-dim"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-[11px] tracking-wider text-text-faint uppercase">Password</label>
+              <input
+                type="password"
+                required
+                autoComplete="new-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-sm text-text placeholder:text-text-faint focus:border-cyan-dim"
+                placeholder="At least 6 characters"
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-1 w-full rounded-lg border border-cyan bg-cyan py-2.5 text-sm font-bold text-[#04201d] transition-colors hover:bg-[#4bf0e0] disabled:opacity-60"
-        >
-          {loading ? 'Creating account…' : 'Sign up'}
-        </button>
-      </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="mt-1 w-full rounded-lg border border-cyan bg-cyan py-2.5 text-sm font-bold text-[#04201d] transition-colors hover:bg-[#4bf0e0] disabled:opacity-60"
+            >
+              {loading ? 'Creating account…' : 'Sign up'}
+            </button>
+          </form>
+        </>
+      ) : (
+        <p className="mt-4 text-center text-xs text-text-faint">
+          Email/password sign-up is temporarily unavailable. Google is the only way to sign up for now.
+        </p>
+      )}
 
       <p className="mt-5 text-center text-xs text-text-faint">
         Already have an account?{' '}
