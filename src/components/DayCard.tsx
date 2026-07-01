@@ -4,7 +4,7 @@ import { CopyPlus, LayoutTemplate, Plus } from 'lucide-react';
 import { addDays, fromISO, shortDate } from '../lib/dates';
 import { useWorkoutStore } from '../store/workoutStore';
 import { useToastStore } from '../store/toastStore';
-import DatePickerPopover from './DatePickerPopover';
+import WeekDayPicker from './WeekDayPicker';
 import TemplateModal from './TemplateModal';
 import ExerciseCard from './ExerciseCard';
 
@@ -25,6 +25,7 @@ export default function DayCard({
   const copyDayTo = useWorkoutStore((s) => s.copyDayTo);
   const showToast = useToastStore((s) => s.show);
   const [templatesOpen, setTemplatesOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     if (!day) ensureDay(mondayISO, dateISO);
@@ -48,10 +49,19 @@ export default function DayCard({
             <LayoutTemplate size={12} />
             Template
           </button>
-          <DatePickerPopover
-            label="Copy to…"
-            icon={<CopyPlus size={12} />}
-            defaultDate={addDays(fromISO(dateISO), 7)}
+          <button
+            onClick={() => setPickerOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-semibold text-text-dim hover:border-cyan-dim hover:text-text"
+          >
+            <CopyPlus size={12} />
+            Copy to…
+          </button>
+          <WeekDayPicker
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            mode="day"
+            title="Copy to which day?"
+            initialDate={addDays(fromISO(dateISO), 7)}
             onConfirm={(targetISO) => {
               copyDayTo(mondayISO, dateISO, targetISO);
               showToast('Day copied');

@@ -73,8 +73,7 @@ export default function TemplateModal({
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Push Day A"
-                  disabled={currentExercises.length === 0}
-                  className="flex-1 rounded-md border border-border bg-surface-2 px-2.5 py-2 text-sm text-text placeholder:text-text-faint disabled:opacity-50"
+                  className="flex-1 rounded-md border border-border bg-surface-2 px-2.5 py-2 text-sm text-text placeholder:text-text-faint"
                 />
                 <button
                   onClick={onSave}

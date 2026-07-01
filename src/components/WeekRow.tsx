@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { ChevronRight, Layers } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DOW, addDays, shortDate, toISO } from '../lib/dates';
 import { dayHasData, useWorkoutStore, weekHasData } from '../store/workoutStore';
 import { useToastStore } from '../store/toastStore';
 import DayCard from './DayCard';
-import DatePickerPopover from './DatePickerPopover';
+import WeekDayPicker from './WeekDayPicker';
 
 export default function WeekRow({
   monday,
@@ -22,6 +23,7 @@ export default function WeekRow({
   const ensureWeek = useWorkoutStore((s) => s.ensureWeek);
   const duplicateWeek = useWorkoutStore((s) => s.duplicateWeek);
   const showToast = useToastStore((s) => s.show);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const sunday = addDays(monday, 6);
   const logged = weekHasData(data, mondayISO);
@@ -80,10 +82,19 @@ export default function WeekRow({
           >
             <div className="px-4 pt-1 pb-4">
               <div className="mb-3.5 flex justify-end border-b border-dashed border-border pb-3">
-                <DatePickerPopover
-                  label="Duplicate to…"
-                  icon={<Layers size={13} />}
-                  defaultDate={addDays(monday, 7)}
+                <button
+                  onClick={() => setPickerOpen(true)}
+                  className="flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2.5 py-1 text-[11px] font-semibold text-text-dim hover:border-cyan-dim hover:text-text"
+                >
+                  <Layers size={13} />
+                  Duplicate to…
+                </button>
+                <WeekDayPicker
+                  open={pickerOpen}
+                  onClose={() => setPickerOpen(false)}
+                  mode="week"
+                  title="Duplicate to which week?"
+                  initialDate={addDays(monday, 7)}
                   onConfirm={(targetISO) => {
                     ensureWeek(mondayISO);
                     duplicateWeek(mondayISO, targetISO);
