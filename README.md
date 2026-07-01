@@ -35,6 +35,25 @@ RLS policies restrict every row to `auth.uid() = user_id`. A trigger on
 `auth.users` auto-creates an empty row the moment someone signs up, so the app
 never has to handle a "no row yet" state.
 
+## Email delivery (SMTP)
+
+Supabase's built-in email service is for testing only — a couple emails an
+hour, and it silently drops mail to any address outside your Supabase org's
+team. For real signup/reset emails, enable custom SMTP under
+**Authentication → Emails → SMTP Settings** in the dashboard. [Resend](https://resend.com)
+is the simplest pairing:
+
+- Host: `smtp.resend.com`, Port: `465`, Username: `resend`, Password: your Resend API key.
+- Sender email: `onboarding@resend.dev` works with zero setup, but Resend will
+  only deliver to the email address your Resend account itself is
+  registered with until you verify a real domain. Verify a domain in Resend
+  (adds a couple DNS records) once you want other people to be able to sign up.
+
+Password reset (`/forgot-password` → `/reset-password`) also depends on this —
+add both `.../reset-password` URLs (prod + `http://localhost:5173/reset-password`)
+to Supabase's **Authentication → URL Configuration → Redirect URLs**, same as
+the Google callback below.
+
 ## Setting up "Sign in with Google"
 
 You said you already have a Google Cloud OAuth Client ID/Secret — you just need

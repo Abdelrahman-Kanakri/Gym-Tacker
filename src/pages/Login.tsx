@@ -63,7 +63,12 @@ export default function Login() {
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-[11px] tracking-wider text-text-faint uppercase">Password</label>
+          <div className="mb-1.5 flex items-center justify-between">
+            <label className="block text-[11px] tracking-wider text-text-faint uppercase">Password</label>
+            <Link to="/forgot-password" className="text-[11px] font-semibold text-cyan hover:underline">
+              Forgot password?
+            </Link>
+          </div>
           <input
             type="password"
             required

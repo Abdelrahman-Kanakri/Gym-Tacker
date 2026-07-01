@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { getAuthErrorMessage } from '../lib/authErrors';
 
 interface AuthState {
   session: Session | null;
@@ -9,6 +10,8 @@ interface AuthState {
   signInWithPassword: (email: string, password: string) => Promise<string | null>;
   signUpWithPassword: (email: string, password: string) => Promise<string | null>;
   signInWithGoogle: () => Promise<string | null>;
+  resetPasswordForEmail: (email: string) => Promise<string | null>;
+  updatePassword: (newPassword: string) => Promise<string | null>;
   signOut: () => Promise<void>;
 }
 
@@ -28,12 +31,12 @@ export const useAuthStore = create<AuthState>((set) => {
 
     signInWithPassword: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      return error?.message ?? null;
+      return getAuthErrorMessage(error);
     },
 
     signUpWithPassword: async (email, password) => {
       const { error } = await supabase.auth.signUp({ email, password });
-      return error?.message ?? null;
+      return getAuthErrorMessage(error);
     },
 
     signInWithGoogle: async () => {
@@ -41,7 +44,19 @@ export const useAuthStore = create<AuthState>((set) => {
         provider: 'google',
         options: { redirectTo: window.location.origin },
       });
-      return error?.message ?? null;
+      return getAuthErrorMessage(error);
+    },
+
+    resetPasswordForEmail: async (email) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      return getAuthErrorMessage(error);
+    },
+
+    updatePassword: async (newPassword) => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      return getAuthErrorMessage(error);
     },
 
     signOut: async () => {

@@ -20,6 +20,10 @@ dist-ssr
 # local graphify knowledge-graph artifacts
 graphify-out/
 
+# browser network captures / OAuth client secrets (debugging artifacts, not app code)
+*.har
+Google_oAuth_Client_*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
