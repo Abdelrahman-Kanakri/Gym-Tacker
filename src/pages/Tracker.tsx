@@ -129,8 +129,8 @@ function MonthView({
   return (
     <div>
       <div className="mb-4.5 flex items-center justify-between">
-        <h2 className="m-0 text-[22px] font-semibold">
-          {MONTH_NAMES[month]} <span className="font-mono text-base text-text-faint">{year}</span>
+        <h2 className="font-heading m-0 text-[28px] leading-none font-black tracking-tight uppercase">
+          {MONTH_NAMES[month]} <span className="font-mono text-base font-normal text-text-faint normal-case">{year}</span>
         </h2>
         <div className="flex gap-2">
           <motion.button

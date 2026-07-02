@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import Loader from '../components/Loader';
+import HudCorners from '../components/HudCorners';
 
 const FEATURES = [
   {
@@ -60,9 +61,9 @@ export default function Landing() {
       />
 
       <header className="mx-auto flex max-w-5xl items-center justify-between px-5 py-6">
-        <div className="flex items-baseline gap-2.5">
+        <div className="flex items-baseline gap-2">
           <div className="glow-cyan h-2.5 w-2.5 rounded-[2px] bg-cyan" />
-          <h1 className="m-0 text-lg font-bold tracking-[0.14em] uppercase">
+          <h1 className="font-heading m-0 text-2xl leading-none font-black tracking-tight uppercase">
             IRON<span className="text-cyan">LOG</span>
           </h1>
         </div>
@@ -75,9 +76,17 @@ export default function Landing() {
       </header>
 
       <main className="mx-auto max-w-3xl px-5 pt-10 pb-20 text-center sm:pt-16">
-        <h2 className="animate-fade-up m-0 text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
-          Log every set. <span className="text-cyan">Never lose the plot.</span>
-        </h2>
+        <div className="relative mx-auto inline-block px-6 py-2 sm:px-10">
+          <HudCorners />
+          <p className="animate-fade-up m-0 mb-1 font-mono text-[10px] tracking-[0.3em] text-cyan-dim uppercase">
+            Weekly progression tracker
+          </p>
+          <h2 className="font-heading animate-fade-up m-0 text-5xl leading-[0.95] font-black tracking-tight uppercase sm:text-7xl">
+            Log every set.
+            <br />
+            <span className="text-cyan">Never lose the plot.</span>
+          </h2>
+        </div>
         <p
           className="animate-fade-up mx-auto mt-4 max-w-lg text-sm text-text-dim sm:text-base"
           style={{ animationDelay: '60ms' }}

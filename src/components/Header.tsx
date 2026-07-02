@@ -30,13 +30,13 @@ export default function Header({
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-bg/90 px-5 pt-4 pb-3.5 backdrop-blur-md">
       <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-between gap-3">
-        <div className="flex items-baseline gap-2.5">
+        <div className="flex items-baseline gap-2">
           <div className="glow-cyan h-2.5 w-2.5 rounded-[2px] bg-cyan" />
           <div>
-            <h1 className="m-0 text-[19px] font-bold tracking-[0.14em] uppercase">
+            <h1 className="font-heading m-0 text-2xl leading-none font-black tracking-tight uppercase">
               IRON<span className="text-cyan">LOG</span>
             </h1>
-            <small className="mt-0.5 block text-[10px] tracking-wider text-text-faint uppercase">
+            <small className="mt-0.5 block font-mono text-[9px] tracking-[0.2em] text-text-faint uppercase">
               weekly progression tracker
             </small>
           </div>
