@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { getAuthErrorMessage } from '../lib/authErrors';
+import { loadTracker } from '../lib/preload';
 
 interface AuthState {
   session: Session | null;
@@ -17,10 +18,12 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => {
   supabase.auth.getSession().then(({ data }) => {
+    if (data.session) loadTracker();
     set({ session: data.session, user: data.session?.user ?? null, initialized: true });
   });
 
   supabase.auth.onAuthStateChange((_event, session) => {
+    if (session) loadTracker();
     set({ session, user: session?.user ?? null, initialized: true });
   });
 

@@ -1,15 +1,17 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
 import Loader from './components/Loader';
+import { loadTracker } from './lib/preload';
 
 const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
-const Tracker = lazy(() => import('./pages/Tracker'));
+const Tracker = lazy(loadTracker);
 
 export default function App() {
   return (
@@ -53,6 +55,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <SpeedInsights />
     </BrowserRouter>
   );
 }
