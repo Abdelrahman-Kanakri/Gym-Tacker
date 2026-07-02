@@ -1,11 +1,23 @@
 import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { LineChart, X } from 'lucide-react';
+import { LineChart, TrendingDown, TrendingUp, Equal, X } from 'lucide-react';
 import { useWorkoutStore } from '../store/workoutStore';
-import { estOneRepMax, getBestE1rm, getDailyBestE1rm, getExerciseHistory } from '../lib/analytics';
+import {
+  estOneRepMax,
+  getBestE1rm,
+  getDailyBestE1rm,
+  getExerciseHistory,
+  suggestProgression,
+} from '../lib/analytics';
 import type { Exercise } from '../types/workout';
 import SetChip from './SetChip';
 import ExerciseChart from './ExerciseChart';
+
+const SUGGESTION_STYLE = {
+  increase: { icon: TrendingUp, className: 'border-cyan-dim bg-cyan/10 text-cyan' },
+  maintain: { icon: Equal, className: 'border-border text-text-dim' },
+  decrease: { icon: TrendingDown, className: 'border-amber/40 bg-amber/10 text-amber' },
+};
 
 export default function ExerciseCard({
   mondayISO,
@@ -37,6 +49,10 @@ export default function ExerciseCard({
   const history = useMemo(() => getExerciseHistory(data, exercise.name), [data, exercise.name]);
   const bestE1rm = useMemo(() => getBestE1rm(history), [history]);
   const dailyBest = useMemo(() => getDailyBestE1rm(history), [history]);
+  const suggestion = useMemo(
+    () => suggestProgression(history.filter((p) => p.dateISO !== dateISO)),
+    [history, dateISO]
+  );
 
   return (
     <div className="mb-2 rounded-lg border border-border-soft bg-surface p-3">
@@ -64,6 +80,17 @@ export default function ExerciseCard({
           <X size={14} />
         </button>
       </div>
+
+      {suggestion &&
+        (() => {
+          const { icon: Icon, className } = SUGGESTION_STYLE[suggestion.type];
+          return (
+            <div className={`mb-2 flex items-start gap-1.5 rounded-md border px-2.5 py-1.5 text-[11px] ${className}`}>
+              <Icon size={12} className="mt-0.5 shrink-0" />
+              <span>{suggestion.message}</span>
+            </div>
+          );
+        })()}
 
       <AnimatePresence initial={false}>
         {chartOpen && (

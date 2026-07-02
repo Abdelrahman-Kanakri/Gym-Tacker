@@ -4,6 +4,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import GuestRoute from './components/GuestRoute';
 import Loader from './components/Loader';
 
+const Landing = lazy(() => import('./pages/Landing'));
 const Login = lazy(() => import('./pages/Login'));
 const Signup = lazy(() => import('./pages/Signup'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -15,6 +16,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<Loader />}>
         <Routes>
+          <Route path="/" element={<Landing />} />
           <Route
             path="/login"
             element={
@@ -41,7 +43,7 @@ export default function App() {
           />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route
-            path="/"
+            path="/app"
             element={
               <ProtectedRoute>
                 <Tracker />

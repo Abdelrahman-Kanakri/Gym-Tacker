@@ -54,7 +54,7 @@ export default function Header({
             <span className="font-mono text-[11px] text-text-dim">{STATUS_LABEL[saveStatus]}</span>
           </div>
 
-          <div className="relative flex gap-0.5 rounded-full border border-border bg-surface-2 p-[3px]">
+          <div className="relative hidden gap-0.5 rounded-full border border-border bg-surface-2 p-[3px] sm:flex">
             {(['month', 'list'] as const).map((v) => (
               <button
                 key={v}
@@ -79,7 +79,7 @@ export default function Header({
             whileTap={{ scale: 0.92 }}
             onClick={signOut}
             title={user?.email ?? 'Sign out'}
-            className="flex items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-2 text-text-faint transition-colors hover:border-danger hover:text-danger"
+            className="hidden items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-2.5 py-2 text-text-faint transition-colors hover:border-danger hover:text-danger sm:flex"
           >
             <LogOut size={14} />
           </motion.button>

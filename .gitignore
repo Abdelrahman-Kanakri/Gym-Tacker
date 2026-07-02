@@ -20,6 +20,9 @@ dist-ssr
 # local graphify knowledge-graph artifacts
 graphify-out/
 
+# Claude Code project-local tooling (agents/hooks/skills), not app code
+.claude/
+
 # browser network captures / OAuth client secrets (debugging artifacts, not app code)
 *.har
 Google_oAuth_Client_*.json

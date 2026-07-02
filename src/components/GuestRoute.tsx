@@ -6,7 +6,7 @@ export default function GuestRoute({ children }: { children: React.ReactNode }) 
   const { user, initialized } = useAuthStore();
 
   if (!initialized) return <Loader />;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/app" replace />;
 
   return <>{children}</>;
 }

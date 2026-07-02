@@ -5,6 +5,7 @@ export interface HistoryPoint {
   weight: number;
   reps: number;
   e1rm: number;
+  rpe: number | null;
 }
 
 // Epley formula — standard estimate of one-rep max from a lower-rep set.
@@ -30,7 +31,14 @@ export function getExerciseHistory(data: WorkoutData, exerciseName: string): His
           const weight = parseFloat(s.weight);
           const reps = parseInt(s.reps, 10);
           if (!isNaN(weight) && !isNaN(reps) && weight > 0 && reps > 0) {
-            points.push({ dateISO, weight, reps, e1rm: estOneRepMax(weight, reps) });
+            const rpeNum = s.rpe ? parseFloat(s.rpe) : NaN;
+            points.push({
+              dateISO,
+              weight,
+              reps,
+              e1rm: estOneRepMax(weight, reps),
+              rpe: !isNaN(rpeNum) ? rpeNum : null,
+            });
           }
         }
       }
@@ -42,6 +50,53 @@ export function getExerciseHistory(data: WorkoutData, exerciseName: string): His
 
 export function getBestE1rm(history: HistoryPoint[]): number {
   return history.reduce((max, p) => Math.max(max, p.e1rm), 0);
+}
+
+export interface ProgressionSuggestion {
+  type: 'increase' | 'maintain' | 'decrease';
+  message: string;
+}
+
+// "Smart progressive overload": look at the last logged session for this
+// exercise (by average RPE across its sets) and suggest a next step.
+// RPE <=6 (felt easy) -> progress. RPE >=9 (near failure) -> back off.
+// No RPE logged -> can't judge difficulty, so just suggest repeating.
+export function suggestProgression(history: HistoryPoint[]): ProgressionSuggestion | null {
+  if (history.length === 0) return null;
+
+  const lastDate = history[history.length - 1].dateISO;
+  const lastSets = history.filter((p) => p.dateISO === lastDate);
+  const topSet = lastSets.reduce((a, b) => (b.weight > a.weight ? b : a));
+  const rpes = lastSets.map((s) => s.rpe).filter((r): r is number => r !== null);
+
+  if (rpes.length === 0) {
+    return {
+      type: 'maintain',
+      message: `Last time: ${topSet.weight}kg × ${topSet.reps}. Log an RPE next set for a smarter suggestion.`,
+    };
+  }
+
+  const avgRpe = rpes.reduce((a, b) => a + b, 0) / rpes.length;
+
+  if (avgRpe <= 6) {
+    const bump = topSet.weight >= 40 ? 5 : 2.5;
+    return {
+      type: 'increase',
+      message: `Felt easy last time (RPE ${avgRpe.toFixed(1)}) — try ${topSet.weight + bump}kg, or +2 reps, or +1 set.`,
+    };
+  }
+
+  if (avgRpe >= 9) {
+    return {
+      type: 'decrease',
+      message: `Pushed hard last time (RPE ${avgRpe.toFixed(1)}) — repeat ${topSet.weight}kg to master it, or drop slightly.`,
+    };
+  }
+
+  return {
+    type: 'maintain',
+    message: `On track (RPE ${avgRpe.toFixed(1)}) — repeat ${topSet.weight}kg × ${topSet.reps}.`,
+  };
 }
 
 export interface DailyBest {

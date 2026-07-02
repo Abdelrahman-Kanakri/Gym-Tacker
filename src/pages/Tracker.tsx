@@ -8,6 +8,8 @@ import Header from '../components/Header';
 import WeekRow from '../components/WeekRow';
 import Loader from '../components/Loader';
 import ToastHost from '../components/ToastHost';
+import RestTimer from '../components/RestTimer';
+import BottomNav from '../components/BottomNav';
 
 type View = 'month' | 'list';
 
@@ -49,7 +51,7 @@ export default function Tracker() {
   if (loading) return <Loader />;
 
   return (
-    <div className="min-h-screen pb-16">
+    <div className="min-h-screen pb-24 sm:pb-16">
       <Header view={view} onViewChange={setView} />
 
       <main className="mx-auto max-w-3xl px-5 py-6">
@@ -86,6 +88,8 @@ export default function Tracker() {
       </footer>
 
       <ToastHost />
+      <RestTimer />
+      <BottomNav view={view} onViewChange={setView} />
     </div>
   );
 }
