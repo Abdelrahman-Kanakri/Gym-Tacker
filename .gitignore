@@ -38,3 +38,8 @@ Google_oAuth_Client_*.json
 *.sln
 *.sw?
 Google_oAuth_Client_IronLog.json
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
